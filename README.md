@@ -1,5 +1,5 @@
-# zipCode (우편번호 검색)
-공공데이터 Open API 를 사용한 새우편번호 검색
+# newZipCode (새우편번호 검색)
+공공데이터 Open API 를 사용한 5자리 새우편번호 검색
 
 Screen shot :
 ![Screen shot](http://applusform.github.io/newZipCode/screenshot.png)
