@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	Created by ApplusForm.com on 2015.03.18 
+
+	Permission is granted to copy, distribute, modify under the terms of ApplusForm License.
+
+	Copyright (C) 2014 ApplusForm.com. All rights reserved.
+ -->
+<MOML version="1.1.8" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.applusform.com/xsd/moml_ui_1.1.8.xsd">
+	<THEMES>
+		<THEME id="text" fontSize="30"/>
+		<THEME element="LABEL" parent="text"/>
+		<THEME element="SPINNER" parent="text"/>
+		<THEME element="EDIT" parent="text"/>
+		<THEME element="BUTTON" parent="text" defaultImg="#0080ff" pressedImg="#008000" padding="30,20,30,20" textColor="white"/>
+		<THEME id="zipCode" parent="text" layout="150,100" textAlign="center"/>
+		<THEME id="address" parent="text" layout="530,100" multiLine="true" minFontSize="20" ellipsis="none" textAlign="vCenter" />
+	</THEMES>
+	<UILAYOUT portrait="720,1230" landscape="720,1230">
+		<WINDOW layout="0,0,720,1230" img="white"  align="linear:vertical">
+			<STYLEBUTTON  layout="720,100" text="새우편번호 검색" overlay1="gradation:tb|#004080|#40a0ff|#0080ff" fontSize="40" textAlign="bottom|center" padding="15" textColor="white" />
+			<WINDOW padding="20">
+				<WINDOW align="linear">
+					<SPINNER id="borodCityList" layout="200,80" dataList="//borodCity" valuePath="brtcNm" onChange="function.updateSiGunGuList"/>
+					<SPINNER id="siGunGuList" layout="300,80" dataList="//siGunGuList" valuePath="signguCd" onChange="function.updateEupMyunDongList"/>
+				</WINDOW>
+				<WINDOW align="linear|subCenter">
+					<SPINNER id="eupMyunDongList" layout="400,80" dataList="//eupMyunDongList" valuePath="emdCd" />
+					<BUTTON layout="150,80" text="검색" onClick="function.search(1)" margin="5"/>
+				</WINDOW>
+
+				<WINDOW layout="680,100" align="linear" >
+					<LABEL id="zipCode" themeId="zipCode"/>
+					<LABEL id="address" themeId="address"/>
+				</WINDOW>
+				
+				<LIST2 id="zipCodeList" layout="680,650" dataList="//lotNumberListAreaCd" img="lightsteelblue">
+					<LISTLAYOUT>
+						<BUTTON layout="0,0,680,100" align="linear" onClick="function.selectZipCode(zipCode.text, address.text)" pressedImg="#80a0ff" img="transparent">
+							<LABEL id="zipCode" themeId="zipCode" text="{xpath.evaluate('zipNo')}" />
+							<LABEL id="address" themeId="address" text="{xpath.evaluate('adres')}" minFontSize="-1"/>
+						</BUTTON>
+					</LISTLAYOUT>
+				</LIST2>
+				<WINDOW layout="680,100" align="linear:hCenter" >
+					<BUTTON id="prev" layout="120,80" text="이전" onClick="function.search(--userVariable.currentPage)"/>
+					<LABEL id="page" layout="120,80" textFormat="number" textAlign="right|center"/>
+					<LABEL layout="auto,80" textAlign="center" text=" / "/>
+					<LABEL id="total" layout="120,80" textAlign="left|center" />
+					<BUTTON id="next" layout="120,80" text="다음" onClick="function.search(++userVariable.currentPage)"/>
+				</WINDOW>
+				<WINDOW align="linear">
+					<LABEL id="status" layout="480,auto" fontSize="20"/>
+					<LABEL layout="200,auto" textAlign="right" text="자료제공 : 우정사업본부" textColor="hotpink" fontSize="20"/>
+				</WINDOW>
+			</WINDOW>
+		</WINDOW>
+	</UILAYOUT>
+
+	<!-- https://www.data.go.kr 에서 오픈API - 새우편번호 지번주소 조회 서비스의 [SERVICE KEY]를 발급 받아야 합니다. -->
+	<CMD cmd="userVariable.serviceKey = 'XAQRkAc4BBj5RWTWfdEX5Oc5ry0o4j74tmxD5R4HhJoegNLrNTlRZl6%2BCW%2BX%2BC28DAwBYq73UvcNcdB6n591bg%3D%3D'" />
+	<CMD cmd="function.updateBorodCityList" />
+
+	<FUNCTION id="updateBorodCityList">
+		<CMD cmd="url = 'http://openapi.epost.go.kr/postal/retrieveLotNumberAdressAreaCdService/retrieveLotNumberAdressAreaCdService/getBorodCityList?'"/>
+		<CMD cmd="url = url + 'serviceKey=' + userVariable.serviceKey"/>
+		<CMD cmd="xml = file.read(url)" />
+		<CMD cmd="borodCityList.dataSource = xml" />
+		<CMD cmd="function.updateSiGunGuList" />
+	</FUNCTION>
+	<FUNCTION id="updateSiGunGuList">
+		<CMD cmd="url = 'http://openapi.epost.go.kr/postal/retrieveLotNumberAdressAreaCdService/retrieveLotNumberAdressAreaCdService/getSiGunGuList?'"/>
+		<CMD cmd="url = url + 'serviceKey=' + userVariable.serviceKey"/>
+		<CMD cmd="url = url + '&amp;brtcCd=' + string.encode(borodCityList.text, 'percent')"/>
+		<CMD cmd="xml = file.read(url)" />
+		<CMD cmd="siGunGuList.dataSource = xml" />
+		<CMD cmd="function.updateEupMyunDongList" />
+	</FUNCTION>
+	<FUNCTION id="updateEupMyunDongList">
+		<CMD cmd="url = 'http://openapi.epost.go.kr/postal/retrieveLotNumberAdressAreaCdService/retrieveLotNumberAdressAreaCdService/getEupMyunDongList?'"/>
+		<CMD cmd="url = url + 'serviceKey=' + userVariable.serviceKey"/>
+		<CMD cmd="url = url + '&amp;brtcCd=' + string.encode(borodCityList.text, 'percent')"/>
+		<CMD cmd="url = url + '&amp;signguCd=' + string.encode(siGunGuList.text, 'percent')"/>
+		<CMD cmd="xml = file.read(url)" />
+		<CMD cmd="eupMyunDongList.dataSource = xml" />
+	</FUNCTION>
+
+	<FUNCTION id="search(page)">
+		<RETURN condition="page lt 0 or (page ge 2 and page gt total.text)"/>
+		<CMD cmd="status.text = '검색중...'" />
+		<CMD cmd="zipCodeList.dataSource = ''"/>
+		<CMD cmd="userVariable.currentPage = page" />
+
+		<CMD cmd="url = 'http://openapi.epost.go.kr/postal/retrieveLotNumberAdressAreaCdService/retrieveLotNumberAdressAreaCdService/getLotNumberListAreaCd?'"/>
+		<CMD cmd="url = url + 'serviceKey=' + userVariable.serviceKey"/>
+		<CMD cmd="url = url + '&amp;brtcCd=' + string.encode(borodCityList.text, 'percent')"/>
+		<CMD cmd="url = url + '&amp;signguCd=' + string.encode(siGunGuList.text, 'percent')"/>
+		<CMD cmd="url = url + '&amp;emdCd=' + string.encode(eupMyunDongList.text, 'percent')"/>
+		<CMD cmd="url= url + '&amp;countPerPage=50'"/>
+		<CMD cmd="url= url + '&amp;currentPage=' + page"/>
+		<CMD cmd="xml = file.read(url)" />
+		<CMD cmd="status.text = xpath.evaluateEx(xml, '//totalCount') + ' 개가 검색되었습니다.'" />
+		<CMD cmd="page.text = xpath.evaluateEx(xml, '//currentPage')" />
+		<CMD cmd="total.text = xpath.evaluateEx(xml, '//totalPage')" />
+		<CMD cmd="zipCodeList.dataSource = xml" />
+	</FUNCTION>
+	<FUNCTION id="selectZipCode(zipCode, address)">
+		<CMD cmd="zipCode.text = zipCode" />
+		<CMD cmd="address.text = address" />
+	</FUNCTION>
+</MOML>
